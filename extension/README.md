@@ -7,8 +7,8 @@
 <img src="https://gitlab.com/ncl-group/numeric-computation-libraries/-/raw/master/extension/img/cpp_extension.png" alt="图片无法加载" width="900" align=center />  
 
 **NOTE:如有需要，可安装中文语言包和 文件传输插件sftp(用于在服务器和本地之间传输文件)，如下：**  
-<img src="https://gitlab.com/ncl-group/numeric-computation-libraries/-/raw/master/extension/img/Chinese.png" alt="图片无法加载" width="900" align=center />  
-<img src="https://gitlab.com/ncl-group/numeric-computation-libraries/-/raw/master/extension/img/sftp.png" alt="图片无法加载" width="900" align=center />  
+<img src="https://gitlab.com/ncl-group/numeric-computation-libraries/-/raw/master/extension/img/Chinese.PNG" alt="图片无法加载" width="900" align=center />  
+<img src="https://gitlab.com/ncl-group/numeric-computation-libraries/-/raw/master/extension/img/sftp.PNG" alt="图片无法加载" width="900" align=center />  
 
 3.安装 c++ 编译器(MinGW-w64)  
 1.安装包下载  
@@ -18,7 +18,7 @@
 点击[离线包下载](https://sourceforge.net/projects/mingw-w64/files/)进入 进入下图1后将页面往下滑到图2区域，点击所需离线包名称(参照方法一第三步标注)，完成下载操作。
 <img src="https://gitlab.com/ncl-group/numeric-computation-libraries/-/raw/master/extension/img/MinGW_install1.jpeg" width="900" alt="图片无法加载">
 
-<img src="img/MinGW_install2.jpeg" width="900" alt="图片无法加载">
+<img src="https://gitlab.com/ncl-group/numeric-computation-libraries/-/raw/master/extension/img/MinGW_install2.jpeg" width="900" alt="图片无法加载">
 
 解压得到二进制文件，文件结构如下：
 
@@ -27,7 +27,7 @@
 2.环境变量配置  
 <u>右键计算机→属性→高级系统设置→高级→环境变量</u>，然后鼠标双击系统变量中Path，或者选中后点击编辑，在变量值输入框的末尾输入英文分号后将MinGW-w64包目录下bin文件夹的全路径粘贴到后面，bin的后面有无斜杠均可；或者选择Path后新建，复制bin文件夹路径，如下图：
 
-<img src="https://gitlab.com/ncl-group/numeric-computation-libraries/-/raw/master/extension/img/MinGW_path.png" width="900" alt="图片无法下载">
+<img src="https://gitlab.com/ncl-group/numeric-computation-libraries/-/raw/master/extension/img/MinGW_path.PNG" width="900" alt="图片无法下载">
 
 在window cmd中键入 gcc/g++ -v 查看编译器版本
 
@@ -45,13 +45,13 @@ MinGW-w64 与 MinGW 的区别在于 MinGW 只能编译生成32位可执行程序
 在VS Code的工程中(通常指一个文件夹或者workspace),通常需要包含c_cpp_properties.json、task.json、和launch.json 三个文件，如果已安装sftp插件，还会有sftp.json文件，如下图所示。在VS Code中，所有的设置都可以通过JSON文件来完成，下面我们将对这些文件进行配置，从而实现代码调试功能。
 
 <center>
-<img src="https://gitlab.com/ncl-group/numeric-computation-libraries/-/raw/master/extension/img/vs_code_dir.png" alt="图片无法加载" >
+<img src="https://gitlab.com/ncl-group/numeric-computation-libraries/-/raw/master/extension/img/vs_code_dir.PNG" alt="图片无法加载" >
 </center>
 
 1.. c_cpp_properties.json( compiler path and IntelliSense settings )配置  
 如果VS Code打开的文件夹中没有c_cpp_properties.json文件，可通过<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>调出code的指令窗口，键入`Edit Configurations`并选择对应编辑设置，本次我们使用一个新建的文件夹进行测试，发现code设置后该目录下生成了.vscode文件夹和c_cpp_properties.json文件，如下：  
-<img src="https://gitlab.com/ncl-group/numeric-computation-libraries/-/raw/master/extension/img/edit_configurations.png"  alt="图片无法加载">
-<img src="https://gitlab.com/ncl-group/numeric-computation-libraries/-/raw/master/extension/img/edit_configurations_done.png" alt="图片无法加载">
+<img src="https://gitlab.com/ncl-group/numeric-computation-libraries/-/raw/master/extension/img/edit_configurations.PNG"  alt="图片无法加载">
+<img src="https://gitlab.com/ncl-group/numeric-computation-libraries/-/raw/master/extension/img/edit_configurations_done.PNG" alt="图片无法加载">
 
 c_cpp_properties.json文件设置内容如下，其中***includePath***为IntelliSense在搜索所包含的 头文件 时要使用的路径列表，此处可理解为 告诉 编辑器(code)去哪里找这些.h文件，从而完成代码自动补全和检查功能。***compilerPath***需要指定到前文安装的编译器(gcc/g++ etc).  
  
@@ -81,8 +81,8 @@ c_cpp_properties.json文件设置内容如下，其中***includePath***为Intell
 2.tasks.json( build instructions )配置  
 通过<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>调出code指令窗口，键入`configure tasks`并选择对应编辑设置。  
 
-<img src="https://gitlab.com/ncl-group/numeric-computation-libraries/-/raw/master/extension/img/configure_tasks.png" alt="图片无法加载">
-<img src="https://gitlab.com/ncl-group/numeric-computation-libraries/-/raw/master/extension/img/configure_tasks_done.png" width="900" alt="图片无法加载" >
+<img src="https://gitlab.com/ncl-group/numeric-computation-libraries/-/raw/master/extension/img/configure_tasks.PNG" alt="图片无法加载">
+<img src="https://gitlab.com/ncl-group/numeric-computation-libraries/-/raw/master/extension/img/configure_tasks_done.PNG" width="900" alt="图片无法加载" >
 
 tasks.json 内容设置如下，其中***command***为编译所需要的编译器(gcc/g++ etc),***args***为编译器编译时参数，在需要使用一些第三方头文件时，需要在此处通过`-I /path/include`进行指定，从而告诉编译器去哪里寻找对于头文件：    
 ```json
@@ -117,8 +117,8 @@ tasks.json 内容设置如下，其中***command***为编译所需要的编译�
 3.launch.json( debugger setting )配置  
 通过<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>调出code指令窗口，键入`open launch.json`并选择对应编辑设置。  
 
-<img src='https://gitlab.com/ncl-group/numeric-computation-libraries/-/raw/master/extension/img/open_launch.png' alt="图片无法加载">
-<img src="https://gitlab.com/ncl-group/numeric-computation-libraries/-/raw/master/extension/img/open_launch_done.png" width="900" alt="图片无法加载">
+<img src='https://gitlab.com/ncl-group/numeric-computation-libraries/-/raw/master/extension/img/open_launch.PNG' alt="图片无法加载">
+<img src="https://gitlab.com/ncl-group/numeric-computation-libraries/-/raw/master/extension/img/open_launch_done.PNG" width="900" alt="图片无法加载">
 
 launch.json文件设置如下，其中`program`为生成的目标文件，`miDebuggerPath`指定系统中debugger路径：  
 
