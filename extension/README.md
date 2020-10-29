@@ -497,4 +497,310 @@ matrix_mul8_c       4111 ns         4109 ns       170248
 matrix_mul8_n       2044 ns         2043 ns       335616
 
 ```
-## Eigen 优化实例
+</details>
+
+<!-- <details> -->
+<summary><font size=5> Eigen优化实例</font></summary>
+
+### 1. 基于SIMD的Eigen/core模块下ARM平台单/双精度浮点数开方优化
+当前Eigen社区中仅有部分开发者对于浮点数开方运算在x86 powerPC mips等平台上进行了向量化优化，因此我们对其在ARM平台上进行优化.(解决了issue1933)。  
+下面给出单精度浮点数开方运算向量化实现：
+```cpp
+// 卡马克快速开方倒数
+float InvSqrt (float x){
+    float xhalf = 0.5f*x;
+    int i = *(int*)&x;
+    i = 0x5f3759df - (i>>1);
+    x = *(float*)&i;
+    // 牛顿迭代
+    x = x*(1.5f - xhalf*x*x);
+    return x;
+}
+```
+```cpp
+#if EIGEN_FAST_MATH
+
+/* Functions for sqrt support packet2f/packet4f.*/
+// The EIGEN_FAST_MATH version uses the vrsqrte_f32 approximation and one step
+// of Newton's method, at a cost of 1-2 bits of precision as opposed to the
+// exact solution. It does not handle +inf, or denormalized numbers correctly.
+// The main advantage of this approach is not just speed, but also the fact that
+// it can be inlined and pipelined with other computations, further reducing its
+// effective latency. This is similar to Quake3's fast inverse square root.
+// For more details see: http://www.beyond3d.com/content/articles/8/
+template<> EIGEN_STRONG_INLINE Packet4f psqrt(const Packet4f& _x){
+  Packet4f half = vmulq_n_f32(_x, 0.5f);
+  Packet4ui denormal_mask = vandq_u32(vcgeq_f32(_x, vdupq_n_f32(0.0f)),
+                                      vcltq_f32(_x, pset1<Packet4f>((std::numeric_limits<float>::min)())));
+  // Compute approximate reciprocal sqrt.
+  Packet4f x = vrsqrteq_f32(_x);
+  // Do a single step of Newton's iteration. 
+  //the number 1.5f was set reference to Quake3's fast inverse square root
+  x = vmulq_f32(x, psub(pset1<Packet4f>(1.5f), pmul(half, pmul(x, x))));
+  // Flush results for denormals to zero.
+  return vreinterpretq_f32_u32(vbicq_u32(vreinterpretq_u32_f32(pmul(_x, x)), denormal_mask));
+}
+
+template<> EIGEN_STRONG_INLINE Packet2f psqrt(const Packet2f& _x){
+  Packet2f half = vmul_n_f32(_x, 0.5f);
+  Packet2ui denormal_mask = vand_u32(vcge_f32(_x, vdup_n_f32(0.0f)),
+                                     vclt_f32(_x, pset1<Packet2f>((std::numeric_limits<float>::min)())));
+  // Compute approximate reciprocal sqrt.
+  Packet2f x = vrsqrte_f32(_x);
+  // Do a single step of Newton's iteration.
+  x = vmul_f32(x, psub(pset1<Packet2f>(1.5f), pmul(half, pmul(x, x))));
+  // Flush results for denormals to zero.
+  return vreinterpret_f32_u32(vbic_u32(vreinterpret_u32_f32(pmul(_x, x)), denormal_mask));
+}
+
+#else 
+template<> EIGEN_STRONG_INLINE Packet4f psqrt(const Packet4f& _x){return vsqrtq_f32(_x);}
+template<> EIGEN_STRONG_INLINE Packet2f psqrt(const Packet2f& _x){return vsqrt_f32(_x); }
+#endif
+```
+
+### 2. 基于SIMD的Eigen/core模块下ARM平台双精度浮点数指数函数优化
+指数函数和对数函数在神经网络的训练中起到重要的作用，常在神经网络的激活函数和损失函数中使用，如sigmod，softmax和交叉熵损失等。Eigen在x86 powerPC mips等平台对单/双精度浮点数指数函数均实现了向量化优化，而在ARM平台上仅仅对单精度浮点数进行了向量化，以此，我们对于双精度浮点数指数函数进行优化。
+
+```cpp
+// Exponential function. Works by writing "x = m*log(2) + r" where
+// "m = floor(x/log(2)+1/2)" and "r" is the remainder. The result is then
+// "exp(x) = 2^m*exp(r)" where exp(r) is in the range [-1,1).
+// A Pade' form  1 + 2x P(x**2)/( Q(x**2) - P(x**2) ) is used to approximate exp(r) in the basic interval
+template <typename Packet>
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+EIGEN_UNUSED
+Packet pexp_double(const Packet _x)
+{
+  Packet x = _x;
+
+  const Packet cst_1 = pset1<Packet>(1.0);
+  const Packet cst_2 = pset1<Packet>(2.0);
+  const Packet cst_half = pset1<Packet>(0.5);
+
+  const Packet cst_exp_hi = pset1<Packet>(709.437);
+  const Packet cst_exp_lo = pset1<Packet>(-709.436139303);
+
+  const Packet cst_cephes_LOG2EF = pset1<Packet>(1.4426950408889634073599);
+  const Packet cst_cephes_exp_p0 = pset1<Packet>(1.26177193074810590878e-4);
+  const Packet cst_cephes_exp_p1 = pset1<Packet>(3.02994407707441961300e-2);
+  const Packet cst_cephes_exp_p2 = pset1<Packet>(9.99999999999999999910e-1);
+  const Packet cst_cephes_exp_q0 = pset1<Packet>(3.00198505138664455042e-6);
+  const Packet cst_cephes_exp_q1 = pset1<Packet>(2.52448340349684104192e-3);
+  const Packet cst_cephes_exp_q2 = pset1<Packet>(2.27265548208155028766e-1);
+  const Packet cst_cephes_exp_q3 = pset1<Packet>(2.00000000000000000009e0);
+  const Packet cst_cephes_exp_C1 = pset1<Packet>(0.693145751953125);
+  const Packet cst_cephes_exp_C2 = pset1<Packet>(1.42860682030941723212e-6);
+
+  Packet tmp, fx;
+
+  // clamp x
+  x = pmax(pmin(x, cst_exp_hi), cst_exp_lo);
+  // Express exp(x) as exp(g + n*log(2)).
+  fx = pmadd(cst_cephes_LOG2EF, x, cst_half);
+
+  // Get the integer modulus of log(2), i.e. the "n" described above.
+  fx = pfloor(fx);
+
+  // Get the remainder modulo log(2), i.e. the "g" described above. Subtract
+  // n*log(2) out in two steps, i.e. n*C1 + n*C2, C1+C2=log2 to get the last
+  // digits right.
+  tmp = pmul(fx, cst_cephes_exp_C1);
+  Packet z = pmul(fx, cst_cephes_exp_C2);
+  x = psub(x, tmp);
+  x = psub(x, z);
+
+  Packet x2 = pmul(x, x);
+
+  // Evaluate the numerator polynomial of the rational interpolant.
+  Packet px = cst_cephes_exp_p0;
+  px = pmadd(px, x2, cst_cephes_exp_p1);
+  px = pmadd(px, x2, cst_cephes_exp_p2);
+  px = pmul(px, x);
+
+  // Evaluate the denominator polynomial of the rational interpolant.
+  Packet qx = cst_cephes_exp_q0;
+  qx = pmadd(qx, x2, cst_cephes_exp_q1);
+  qx = pmadd(qx, x2, cst_cephes_exp_q2);
+  qx = pmadd(qx, x2, cst_cephes_exp_q3);
+
+  x = pdiv(px, psub(qx, px));
+  x = pmadd(cst_2, x, cst_1);
+
+  // Construct the result 2^n * exp(g) = e * x. The max is used to catch
+  // non-finite values in the input.
+  return pmax(pldexp(x,fx), _x);
+}
+```
+实现 pldexp 函数如下：
+```cpp
+template<typename Packet> EIGEN_STRONG_INLINE Packet
+pldexp_double(Packet a, Packet exponent)
+{
+  typedef typename unpacket_traits<Packet>::integer_packet PacketI;
+  const Packet cst_1023 = pset1<Packet>(1023.0);
+  // return a * 2^exponent
+  PacketI ei = pcast<Packet,PacketI>(padd(exponent, cst_1023));
+  return pmul(a, preinterpret<Packet>(plogical_shift_left<52>(ei)));
+}
+
+```
+
+### 3. 基于SIMD的Eigen/core模块下多平台双精度浮点数对数函数优化
+指数函数和对数函数在神经网络的训练中起到重要的作用，常在神经网络的激活函数和损失函数中使用，如sigmod，softmax和交叉熵损失等。完成了 NEON、SSE、AVX、AVX512模块下双精度浮点数对数函数的向量化实现。
+我们以ARM平台示例：
+```cpp
+/* Natural logarithm
+ * Computes log(x) as log(2^e * m) = C*e + log(m), where the constant C =log(2)
+ * and m is in the range [sqrt(1/2),sqrt(2)). In this range, the logarithm can
+ * be easily approximated by a polynomial centered on m=1 for stability.
+ * Returns the base e (2.718...) logarithm of m.
+ * The argument is separated into its exponent and fractional
+ * parts.  If the exponent is between -1 and +1, the logarithm
+ * of the fraction is approximated by
+ *
+ *     log(1+x) = x - 0.5 x**2 + x**3 P(x)/Q(x).
+ *
+ * Otherwise, setting  z = 2(x-1)/x+1),
+ *                     log(x) = z + z**3 P(z)/Q(z).
+ * 
+ * for more detail see: http://www.netlib.org/cephes/
+ */
+template <typename Packet>
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+EIGEN_UNUSED
+Packet plog_double(const Packet _x)
+{
+  Packet x = _x;
+
+  const Packet cst_1              = pset1<Packet>(1.0);
+  const Packet cst_half           = pset1<Packet>(0.5);
+  // The smallest non denormalized float number.
+  const Packet cst_min_norm_pos   = pset1frombits<Packet>( static_cast<uint64_t>(0x0010000000000000ull));
+  const Packet cst_minus_inf      = pset1frombits<Packet>( static_cast<uint64_t>(0xfff0000000000000ull));
+  const Packet cst_pos_inf        = pset1frombits<Packet>( static_cast<uint64_t>(0x7ff0000000000000ull));
+
+ // Polynomial Coefficients for log(1+x) = x - x**2/2 + x**3 P(x)/Q(x)
+ //                             1/sqrt(2) <= x < sqrt(2)
+  const Packet cst_cephes_SQRTHF = pset1<Packet>(0.70710678118654752440E0);
+  const Packet cst_cephes_log_p0 = pset1<Packet>(1.01875663804580931796E-4);
+  const Packet cst_cephes_log_p1 = pset1<Packet>(4.97494994976747001425E-1);
+  const Packet cst_cephes_log_p2 = pset1<Packet>(4.70579119878881725854E0);
+  const Packet cst_cephes_log_p3 = pset1<Packet>(1.44989225341610930846E1);
+  const Packet cst_cephes_log_p4 = pset1<Packet>(1.79368678507819816313E1);
+  const Packet cst_cephes_log_p5 = pset1<Packet>(7.70838733755885391666E0);
+
+  const Packet cst_cephes_log_r0 = pset1<Packet>(1.0);
+  const Packet cst_cephes_log_r1 = pset1<Packet>(1.12873587189167450590E1);
+  const Packet cst_cephes_log_r2 = pset1<Packet>(4.52279145837532221105E1);
+  const Packet cst_cephes_log_r3 = pset1<Packet>(8.29875266912776603211E1);
+  const Packet cst_cephes_log_r4 = pset1<Packet>(7.11544750618563894466E1);
+  const Packet cst_cephes_log_r5 = pset1<Packet>(2.31251620126765340583E1);
+
+  const Packet cst_cephes_log_q1 = pset1<Packet>(-2.121944400546905827679e-4);
+  const Packet cst_cephes_log_q2 = pset1<Packet>(0.693359375);
+
+  // Truncate input values to the minimum positive normal.
+  x = pmax(x, cst_min_norm_pos);
+
+  Packet e;
+  // extract significant in the range [0.5,1) and exponent
+  x = pfrexp(x,e);
+  
+  // Shift the inputs from the range [0.5,1) to [sqrt(1/2),sqrt(2))
+  // and shift by -1. The values are then centered around 0, which improves
+  // the stability of the polynomial evaluation.
+  //   if( x < SQRTHF ) {
+  //     e -= 1;
+  //     x = x + x - 1.0;
+  //   } else { x = x - 1.0; }
+  Packet mask = pcmp_lt(x, cst_cephes_SQRTHF);
+  Packet tmp = pand(x, mask);
+  x = psub(x, cst_1);
+  e = psub(e, pand(cst_1, mask));
+  x = padd(x, tmp);
+
+  Packet x2 = pmul(x, x);
+  Packet x3 = pmul(x2, x);
+
+  // Evaluate the polynomial approximant , probably to improve instruction-level parallelism.
+  // y = x * ( z * polevl( x, P, 5 ) / p1evl( x, Q, 5 ) );
+  Packet y, y1, y2,y_;
+  y  = pmadd(cst_cephes_log_p0, x, cst_cephes_log_p1);
+  y1 = pmadd(cst_cephes_log_p3, x, cst_cephes_log_p4);
+  y  = pmadd(y, x, cst_cephes_log_p2);
+  y1 = pmadd(y1, x, cst_cephes_log_p5);
+  y_ = pmadd(y, x3, y1);
+
+  y  = pmadd(cst_cephes_log_r0, x, cst_cephes_log_r1);
+  y1 = pmadd(cst_cephes_log_r3, x, cst_cephes_log_r4);
+  y  = pmadd(y, x, cst_cephes_log_r2);
+  y1 = pmadd(y1, x, cst_cephes_log_r5);
+  y  = pmadd(y, x3, y1);
+
+  y_ = pmul(y_, x3);
+  y  = pdiv(y_, y);
+
+  // Add the logarithm of the exponent back to the result of the interpolation.
+  y1  = pmul(e, cst_cephes_log_q1);
+  tmp = pmul(x2, cst_half);
+  y   = padd(y, y1);
+  x   = psub(x, tmp);
+  y2  = pmul(e, cst_cephes_log_q2);
+  x   = padd(x, y);
+  x   = padd(x, y2);
+
+  Packet invalid_mask = pcmp_lt_or_nan(_x, pzero(_x));
+  Packet iszero_mask  = pcmp_eq(_x,pzero(_x));
+  Packet pos_inf_mask = pcmp_eq(_x,cst_pos_inf);
+  // Filter out invalid inputs, i.e.:
+  //  - negative arg will be NAN
+  //  - 0 will be -INF
+  //  - +INF will be +INF
+  return pselect(iszero_mask, cst_minus_inf,
+                              por(pselect(pos_inf_mask,cst_pos_inf,x), invalid_mask));
+}
+```
+实现pfrexp函数如下：
+```cpp
+template<typename Packet> EIGEN_STRONG_INLINE Packet
+pfrexp_double(const Packet& a, Packet& exponent) {
+  typedef typename unpacket_traits<Packet>::integer_packet PacketI;
+  const Packet cst_1022d = pset1<Packet>(1022.0);
+  const Packet cst_half = pset1<Packet>(0.5);
+  const Packet cst_inv_mant_mask  = pset1frombits<Packet>(~0x7ff0000000000000u);
+  exponent = psub(pcast<PacketI,Packet>(plogical_shift_right<52>(preinterpret<PacketI>(a))), cst_1022d);
+  return por(pand(a, cst_inv_mant_mask), cst_half);
+}
+```
+### 4. 基于指令级并行（instruction-level parallelism）对单精度浮点数指数函数进行优化
+指令级并行(instruction-level parallelism)优化是指当多条指令不存在相关关系时，他们在流水线(pipeline)上可以重叠执行从而提高性能，这种指令序列存在的潜在并行性成为指令级并行。
+
+```cpp
+/* calculate y = 1 + r + p5*r**2 + p4*r**3 + p3*r**4 + p2*r**5 + p1*r**6 + p0*r**7*/
+/*
+  Packet r2 = pmul(r, r);
+  Packet r3 = pmul(r2, r);
+  Packet y = cst_cephes_exp_p0;
+  y = pmadd(y, r, cst_cephes_exp_p1);
+  y = pmadd(y, r, cst_cephes_exp_p2);
+  y = pmadd(y, r, cst_cephes_exp_p3);
+  y = pmadd(y, r, cst_cephes_exp_p4);
+  y = pmadd(y, r, cst_cephes_exp_p5);
+  y = pmadd(y, r2, r);
+  y = padd(y, cst_1);
+*/
+  // Evaluate the polynomial approximant,improved by instruction-level parallelism.
+  Packet y, y1, y2;
+  y  = pmadd(cst_cephes_exp_p0, r, cst_cephes_exp_p1);
+  y1 = pmadd(cst_cephes_exp_p3, r, cst_cephes_exp_p4);
+  y2 = padd(r, cst_1);
+  y  = pmadd(y, r, cst_cephes_exp_p2);
+  y1 = pmadd(y1, r, cst_cephes_exp_p5);
+  y  = pmadd(y, r3, y1);
+  y  = pmadd(y, r2, y2);
+
+```
+
+
+<!-- </details> -->
