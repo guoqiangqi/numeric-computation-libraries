@@ -574,26 +574,25 @@ float32x4_t:
 ------------------------------------------------------
 Benchmark            Time             CPU   Iterations
 ------------------------------------------------------
-sqrt_std          1.75 ns         1.75 ns    400816314
-psqrt_quake      0.386 ns        0.386 ns   1000000000
-psqrt_intri      0.386 ns        0.386 ns   1000000000
+sqrt_std          1.75 ns         1.75 ns    400961529
+psqrt_quake      0.425 ns        0.425 ns   1000000000
+psqrt_intri      0.425 ns        0.425 ns   1000000000
 
 float32x2_t:
 ------------------------------------------------------
 Benchmark            Time             CPU   Iterations
 ------------------------------------------------------
-sqrt_std         0.974 ns        0.973 ns    719104522
-psqrt_quake      0.386 ns        0.386 ns   1000000000
-psqrt_intri      0.386 ns        0.386 ns   1000000000
+sqrt_std         0.974 ns        0.974 ns    718144790
+psqrt_quake      0.425 ns        0.425 ns   1000000000
+psqrt_intri      0.425 ns        0.425 ns   1000000000
 
 float64x2_t:
 ------------------------------------------------------
 Benchmark            Time             CPU   Iterations
 ------------------------------------------------------
-sqrt_std         0.974 ns        0.974 ns    718816828
-psqrt_quake      0.386 ns        0.386 ns   1000000000
-psqrt_intri      0.386 ns        0.386 ns   1000000000
-
+sqrt_std         0.974 ns        0.973 ns    718922840
+psqrt_quake      0.425 ns        0.425 ns   1000000000
+psqrt_intri      0.425 ns        0.425 ns   1000000000
 ```
 
 ### 2. 基于SIMD的Eigen/core模块下ARM平台双精度浮点数指数函数优化
@@ -702,7 +701,7 @@ pexp_simd       0.386 ns        0.386 ns   1000000000
 
 ### 3. 基于SIMD的Eigen/core模块下多平台双精度浮点数对数函数优化
 指数函数和对数函数在神经网络的训练中起到重要的作用，常在神经网络的激活函数和损失函数中使用，如sigmod，softmax和交叉熵损失等。完成了 NEON、SSE、AVX、AVX512模块下双精度浮点数对数函数的向量化实现。
-我们以ARM平台示例：
+
 ```cpp
 /* Natural logarithm
  * Computes log(x) as log(2^e * m) = C*e + log(m), where the constant C =log(2)
