@@ -569,12 +569,31 @@ CPU Caches:
   L2 Unified 512 KiB (x8)
   L3 Unified 32768 KiB (x1)
 Load Average: 0.25, 0.13, 0.07
+
+float32x4_t:
 ------------------------------------------------------
 Benchmark            Time             CPU   Iterations
 ------------------------------------------------------
 sqrt_std          1.75 ns         1.75 ns    400816314
 psqrt_quake      0.386 ns        0.386 ns   1000000000
 psqrt_intri      0.386 ns        0.386 ns   1000000000
+
+float32x2_t:
+------------------------------------------------------
+Benchmark            Time             CPU   Iterations
+------------------------------------------------------
+sqrt_std         0.974 ns        0.973 ns    719104522
+psqrt_quake      0.386 ns        0.386 ns   1000000000
+psqrt_intri      0.386 ns        0.386 ns   1000000000
+
+float64x2_t:
+------------------------------------------------------
+Benchmark            Time             CPU   Iterations
+------------------------------------------------------
+sqrt_std         0.974 ns        0.974 ns    718816828
+psqrt_quake      0.386 ns        0.386 ns   1000000000
+psqrt_intri      0.386 ns        0.386 ns   1000000000
+
 ```
 
 ### 2. 基于SIMD的Eigen/core模块下ARM平台双精度浮点数指数函数优化
