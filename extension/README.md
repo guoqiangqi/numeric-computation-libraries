@@ -669,6 +669,7 @@ Packet pexp_double(const Packet _x)
   return pmax(pldexp(x,fx), _x);
 }
 ```
+
 实现 pldexp 函数如下：
 ```cpp
 template<typename Packet> EIGEN_STRONG_INLINE Packet
@@ -680,7 +681,23 @@ pldexp_double(Packet a, Packet exponent)
   PacketI ei = pcast<Packet,PacketI>(padd(exponent, cst_1023));
   return pmul(a, preinterpret<Packet>(plogical_shift_left<52>(ei)));
 }
+```
 
+Benchmarks:
+```
+Running ./pexp_benchmark
+Run on (8 X 2600 MHz CPU s)
+CPU Caches:
+  L1 Data 64 KiB (x8)
+  L1 Instruction 64 KiB (x8)
+  L2 Unified 512 KiB (x8)
+  L3 Unified 32768 KiB (x1)
+Load Average: 0.11, 0.08, 0.06
+-----------------------------------------------------
+Benchmark           Time             CPU   Iterations
+-----------------------------------------------------
+exp_std         0.985 ns        0.984 ns    710239235
+pexp_simd       0.386 ns        0.386 ns   1000000000
 ```
 
 ### 3. 基于SIMD的Eigen/core模块下多平台双精度浮点数对数函数优化
