@@ -826,6 +826,73 @@ pfrexp_double(const Packet& a, Packet& exponent) {
   return por(pand(a, cst_inv_mant_mask), cst_half);
 }
 ```
+Benchmarks:  
+AArch64 with NEON:
+```
+Run on (8 X 2600 MHz CPU s)
+CPU Caches:
+  L1 Data 64 KiB (x8)
+  L1 Instruction 64 KiB (x8)
+  L2 Unified 512 KiB (x8)
+  L3 Unified 32768 KiB (x1)
+Load Average: 0.02, 0.04, 0.06
+-----------------------------------------------------
+Benchmark           Time             CPU   Iterations
+-----------------------------------------------------
+log_std          2.40 ns         2.40 ns    291332254
+plog_simd       0.425 ns        0.424 ns   1000000000
+```
+
+x86_64 with SSE:
+```
+Run on (8 X 3000 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x4)
+  L1 Instruction 32 KiB (x4)
+  L2 Unified 1024 KiB (x4)
+  L3 Unified 30976 KiB (x1)
+Load Average: 0.05, 0.01, 0.00
+-----------------------------------------------------
+Benchmark           Time             CPU   Iterations
+-----------------------------------------------------
+log_std          1.26 ns         1.26 ns    554818141
+plog_simd       0.316 ns        0.316 ns   1000000000
+```
+
+x86_64 with AVX:
+```
+Run on (8 X 3000 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x4)
+  L1 Instruction 32 KiB (x4)
+  L2 Unified 1024 KiB (x4)
+  L3 Unified 30976 KiB (x1)
+Load Average: 0.17, 0.07, 0.01
+-----------------------------------------------------
+Benchmark           Time             CPU   Iterations
+-----------------------------------------------------
+log_std          1.28 ns         1.28 ns    553226433
+plog_simd       0.338 ns        0.338 ns   1000000000
+
+```
+
+x86_64 with AVX512:
+```
+Run on (8 X 3000 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x4)
+  L1 Instruction 32 KiB (x4)
+  L2 Unified 1024 KiB (x4)
+  L3 Unified 30976 KiB (x1)
+Load Average: 0.18, 0.06, 0.01
+-----------------------------------------------------
+Benchmark           Time             CPU   Iterations
+-----------------------------------------------------
+log_std          4.28 ns         4.28 ns    163393751
+plog_simd       0.336 ns        0.336 ns   1000000000
+```
+
+
 ### 4. 基于指令级并行（instruction-level parallelism）对单精度浮点数指数函数进行优化
 指令级并行(instruction-level parallelism)优化是指当多条指令不存在相关关系时，他们在流水线(pipeline)上可以重叠执行从而提高性能，这种指令序列存在的潜在并行性成为指令级并行。
 
