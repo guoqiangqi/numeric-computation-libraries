@@ -559,6 +559,24 @@ template<> EIGEN_STRONG_INLINE Packet2f psqrt(const Packet2f& _x){return vsqrt_f
 #endif
 ```
 
+Benchmarks:
+```
+Running ./sqrt_benchmark
+Run on (8 X 2600 MHz CPU s)
+CPU Caches:
+  L1 Data 64 KiB (x8)
+  L1 Instruction 64 KiB (x8)
+  L2 Unified 512 KiB (x8)
+  L3 Unified 32768 KiB (x1)
+Load Average: 0.25, 0.13, 0.07
+------------------------------------------------------
+Benchmark            Time             CPU   Iterations
+------------------------------------------------------
+sqrt_std          1.75 ns         1.75 ns    400816314
+psqrt_quake      0.386 ns        0.386 ns   1000000000
+psqrt_intri      0.386 ns        0.386 ns   1000000000
+```
+
 ### 2. 基于SIMD的Eigen/core模块下ARM平台双精度浮点数指数函数优化
 指数函数和对数函数在神经网络的训练中起到重要的作用，常在神经网络的激活函数和损失函数中使用，如sigmod，softmax和交叉熵损失等。Eigen在x86 powerPC mips等平台对单/双精度浮点数指数函数均实现了向量化优化，而在ARM平台上仅仅对单精度浮点数进行了向量化，以此，我们对于双精度浮点数指数函数进行优化。
 
