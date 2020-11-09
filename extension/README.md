@@ -905,4 +905,13 @@ template<> EIGEN_STRONG_INLINE Packet2l pcast<Packet2d, Packet2l>(const Packet2d
 #endif
 }
 ```
+
+### 6. 解决Eigen使用gcc 7.x 在avx架构上进行编译时由于 gcc 7.x对于部分avx指令不支持（官方已确认该bug，7.x版本中未修复）触发bug（issue2045）
+
+```cpp  
+//  exponent = _mm256_set_m128d(exponent_hi, exponent_lo);
+  exponent = _mm256_insertf128_pd(exponent, exponent_lo, 0);
+  exponent = _mm256_insertf128_pd(exponent, exponent_hi, 1);
+```
+
 <!-- </details> -->
