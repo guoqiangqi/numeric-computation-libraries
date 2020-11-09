@@ -570,29 +570,21 @@ CPU Caches:
   L3 Unified 32768 KiB (x1)
 Load Average: 0.25, 0.13, 0.07
 
-float32x4_t:
-------------------------------------------------------
-Benchmark            Time             CPU   Iterations
-------------------------------------------------------
-sqrt_std          1.75 ns         1.75 ns    400961529
-psqrt_quake      0.425 ns        0.425 ns   1000000000
-psqrt_intri      0.425 ns        0.425 ns   1000000000
-
-float32x2_t:
-------------------------------------------------------
-Benchmark            Time             CPU   Iterations
-------------------------------------------------------
-sqrt_std         0.974 ns        0.974 ns    718144790
-psqrt_quake      0.425 ns        0.425 ns   1000000000
-psqrt_intri      0.425 ns        0.425 ns   1000000000
+float32x4_t / float32x2_t:
+----------------------------
+Benchmark            Time            
+----------------------------
+sqrt_std    49.138/36.052 ns   
+psqrt_quake        28.526 ns   
+psqrt_intri        29.627 ns     
 
 float64x2_t:
-------------------------------------------------------
-Benchmark            Time             CPU   Iterations
-------------------------------------------------------
-sqrt_std         0.974 ns        0.973 ns    718922840
-psqrt_quake      0.425 ns        0.425 ns   1000000000
-psqrt_intri      0.425 ns        0.425 ns   1000000000
+----------------------------
+Benchmark            Time   
+----------------------------
+sqrt_std           41.982 ns   
+psqrt_quake        35.850 ns   
+psqrt_intri        30.535 ns   
 ```
 
 ### 2. 基于SIMD的Eigen/core模块下ARM平台双精度浮点数指数函数优化
@@ -692,11 +684,11 @@ CPU Caches:
   L2 Unified 512 KiB (x8)
   L3 Unified 32768 KiB (x1)
 Load Average: 0.11, 0.08, 0.06
------------------------------------------------------
-Benchmark           Time             CPU   Iterations
------------------------------------------------------
-exp_std         0.986 ns        0.985 ns    710894241
-pexp_simd       0.772 ns        0.772 ns    905972833
+---------------------------
+Benchmark           Time    
+---------------------------
+exp_std           83.337 ns    
+pexp_simd         75.868 ns    
 ```
 
 ### 3. 基于SIMD的Eigen/core模块下多平台双精度浮点数对数函数优化
@@ -836,14 +828,14 @@ CPU Caches:
   L2 Unified 512 KiB (x8)
   L3 Unified 32768 KiB (x1)
 Load Average: 0.02, 0.04, 0.06
------------------------------------------------------
-Benchmark           Time             CPU   Iterations
------------------------------------------------------
-log_std          2.40 ns         2.40 ns    291332254
-plog_simd       0.425 ns        0.424 ns   1000000000
+---------------------------
+Benchmark           Time 
+---------------------------
+log_std           96.507 ns 
+plog_simd         60.689 ns 
 ```
 
-x86_64 with SSE:
+x86_64 with SSE/AVX/AVX512:
 ```
 Run on (8 X 3000 MHz CPU s)
 CPU Caches:
@@ -852,45 +844,13 @@ CPU Caches:
   L2 Unified 1024 KiB (x4)
   L3 Unified 30976 KiB (x1)
 Load Average: 0.05, 0.01, 0.00
------------------------------------------------------
-Benchmark           Time             CPU   Iterations
------------------------------------------------------
-log_std          1.26 ns         1.26 ns    554818141
-plog_simd       0.316 ns        0.316 ns   1000000000
+----------------------------------------
+Benchmark               Time 
+----------------------------------------
+log_std         30.299/32.049/32.728 ns 
+plog_simd                     29.446 ns 
 ```
 
-x86_64 with AVX:
-```
-Run on (8 X 3000 MHz CPU s)
-CPU Caches:
-  L1 Data 32 KiB (x4)
-  L1 Instruction 32 KiB (x4)
-  L2 Unified 1024 KiB (x4)
-  L3 Unified 30976 KiB (x1)
-Load Average: 0.17, 0.07, 0.01
------------------------------------------------------
-Benchmark           Time             CPU   Iterations
------------------------------------------------------
-log_std          1.28 ns         1.28 ns    553226433
-plog_simd       0.338 ns        0.338 ns   1000000000
-
-```
-
-x86_64 with AVX512:
-```
-Run on (8 X 3000 MHz CPU s)
-CPU Caches:
-  L1 Data 32 KiB (x4)
-  L1 Instruction 32 KiB (x4)
-  L2 Unified 1024 KiB (x4)
-  L3 Unified 30976 KiB (x1)
-Load Average: 0.18, 0.06, 0.01
------------------------------------------------------
-Benchmark           Time             CPU   Iterations
------------------------------------------------------
-log_std          4.28 ns         4.28 ns    163393751
-plog_simd       0.336 ns        0.336 ns   1000000000
-```
 
 
 ### 4. 基于指令级并行（instruction-level parallelism）对单精度浮点数指数函数进行优化
