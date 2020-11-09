@@ -879,8 +879,17 @@ plog_simd                     29.446 ns
   y1 = pmadd(y1, r, cst_cephes_exp_p5);
   y  = pmadd(y, r3, y1);
   y  = pmadd(y, r2, y2);
-
 ```
+Benchmarks:
+```
+float32x4_t pexp op on Aarch64
+------------------------------
+Benchmark             Time 
+------------------------------
+before               55.682 ns 
+after                49.680 ns 
+```
+
 ### 5. 解决Eigen在window平台使用msvc编译时对于向量化类型下标运算不支持触发bug（issue1991和1997）
 ```cpp
 template<> EIGEN_STRONG_INLINE Packet2l pcast<Packet2d, Packet2l>(const Packet2d& a) {
@@ -895,7 +904,5 @@ template<> EIGEN_STRONG_INLINE Packet2l pcast<Packet2d, Packet2l>(const Packet2d
   return _mm_set_epi64x(int64_t(a[1]), int64_t(a[0]));
 #endif
 }
-
 ```
-
 <!-- </details> -->
