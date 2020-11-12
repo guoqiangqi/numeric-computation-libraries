@@ -559,32 +559,64 @@ template<> EIGEN_STRONG_INLINE Packet2f psqrt(const Packet2f& _x){return vsqrt_f
 #endif
 ```
 
+test with google/benchmark:
+```cpp
+#include<benchmark/benchmark.h>
+#include<Eigen/Core>
+using namespace Eigen::internal;
+
+float arr[4] = {2.0f,4.0f,6.0f,7.0f};
+float arr_[4];
+
+static void sqrt_std(benchmark::State& state){
+  for(auto _ : state){
+    for(int i=0;i<4;i++){
+        arr_[i] = std::sqrt(arr[i]);
+    }
+  }
+}
+
+static void psqrt_simd(benchmark::State& state){
+  Packet4f _x;
+  for(auto _ : state){
+    _x = pload<Packet4f>(arr);  
+    _x = psqrt(_x);
+    pstore(arr_, _x);
+    // if(arr_[0]==0) arr[0] = 2.0;
+    // std::cout<<arr_[0];
+  }
+}
+
+BENCHMARK(sqrt_std);
+BENCHMARK(psqrt_simd);
+BENCHMARK_MAIN();
+```
+
 Benchmarks:
 ```
-Running ./sqrt_benchmark
 Run on (8 X 2600 MHz CPU s)
 CPU Caches:
   L1 Data 64 KiB (x8)
   L1 Instruction 64 KiB (x8)
   L2 Unified 512 KiB (x8)
   L3 Unified 32768 KiB (x1)
-Load Average: 0.25, 0.13, 0.07
+Load Average: 0.00, 0.06, 0.02
 
 float32x4_t / float32x2_t:
 ----------------------------
 Benchmark            Time            
 ----------------------------
-sqrt_std    49.138/36.052 ns   
-psqrt_quake        28.526 ns   
-psqrt_intri        29.627 ns     
+sqrt_std      23.2/10.0 ns      
+psqrt_intri   13.1/6.56 ns 
+psqrt_quake        3.50 ns    
 
 float64x2_t:
 ----------------------------
 Benchmark            Time   
 ----------------------------
-sqrt_std           41.982 ns   
-psqrt_quake        35.850 ns   
-psqrt_intri        30.535 ns   
+sqrt_std           15.8 ns   
+psqrt_intri        15.8 ns 
+psqrt_quake        6.94 ns     
 ```
 
 ### 2. 基于SIMD的Eigen/core模块下ARM平台双精度浮点数指数函数优化
@@ -676,19 +708,18 @@ pldexp_double(Packet a, Packet exponent)
 
 Benchmarks:
 ```
-Running ./pexp_benchmark
 Run on (8 X 2600 MHz CPU s)
 CPU Caches:
   L1 Data 64 KiB (x8)
   L1 Instruction 64 KiB (x8)
   L2 Unified 512 KiB (x8)
   L3 Unified 32768 KiB (x1)
-Load Average: 0.11, 0.08, 0.06
+Load Average: 0.23, 0.22, 0.14
 ---------------------------
 Benchmark           Time    
 ---------------------------
-exp_std           83.337 ns    
-pexp_simd         75.868 ns    
+exp_std           42.1 ns    
+pexp_simd         24.7 ns    
 ```
 
 ### 3. 基于SIMD的Eigen/core模块下多平台双精度浮点数对数函数优化
@@ -827,12 +858,12 @@ CPU Caches:
   L1 Instruction 64 KiB (x8)
   L2 Unified 512 KiB (x8)
   L3 Unified 32768 KiB (x1)
-Load Average: 0.02, 0.04, 0.06
+Load Average: 0.12, 0.17, 0.13
 ---------------------------
 Benchmark           Time 
 ---------------------------
-log_std           96.507 ns 
-plog_simd         60.689 ns 
+log_std           55.8 ns 
+plog_simd         26.0 ns 
 ```
 
 x86_64 with SSE/AVX/AVX512:
@@ -844,11 +875,11 @@ CPU Caches:
   L2 Unified 1024 KiB (x4)
   L3 Unified 30976 KiB (x1)
 Load Average: 0.05, 0.01, 0.00
-----------------------------------------
+----------------------------------
 Benchmark               Time 
-----------------------------------------
-log_std         30.299/32.049/32.728 ns 
-plog_simd                     29.446 ns 
+----------------------------------
+log_std         31.7/65.6/131.0 ns 
+plog_simd       11.1/12.0/12.6  ns 
 ```
 
 
@@ -886,8 +917,8 @@ float32x4_t pexp op on Aarch64
 ------------------------------
 Benchmark             Time 
 ------------------------------
-before               55.682 ns 
-after                49.680 ns 
+before               17.9 ns 
+after                16.7 ns 
 ```
 
 ### 5. 解决Eigen在window平台使用msvc编译时对于向量化类型下标运算不支持触发bug（issue1991和1997）
