@@ -607,7 +607,7 @@ float32x4_t / float32x2_t:
 Benchmark            Time            
 ----------------------------
 sqrt_std      23.2/10.0 ns      
-psqrt_intri   13.1/6.56 ns 
+psqrt_simd    13.1/6.56 ns 
 psqrt_quake        3.50 ns    
 
 float64x2_t:
@@ -615,7 +615,7 @@ float64x2_t:
 Benchmark            Time   
 ----------------------------
 sqrt_std           15.8 ns   
-psqrt_intri        15.8 ns 
+psqrt_simd         15.8 ns 
 psqrt_quake        6.94 ns     
 ```
 
