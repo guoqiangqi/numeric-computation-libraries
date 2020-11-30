@@ -911,14 +911,46 @@ plog_simd       11.1/12.0/12.6  ns
   y  = pmadd(y, r3, y1);
   y  = pmadd(y, r2, y2);
 ```
+Benchmark code:
+```cpp
+#include<benchmark/benchmark.h>
+#include<Eigen/Core>
+using namespace Eigen::internal;
+
+float arr[4]{-0.012244f,-0.22222f,0.22222f,0.7855f}; 
+float arr_[4];
+
+static void instruction_no_parallel(benchmark::State &state){
+  Packet4f r;
+  Packet4f result;
+  for(auto _ : state){
+    r = pload<Packet4f>(arr);
+    benchmark::DoNotOptimize(result = pexp(r));    
+    pstore(arr_,result);
+  }
+}
+// register the function as benchmark
+BENCHMARK(instruction_no_parallel);
+// BENCHMARK(instruction_with_parallel);
+
+BENCHMARK_MAIN();
+```
+
 Benchmarks:
 ```
-float32x4_t pexp op on Aarch64
+float32x4_t pexp op on Aarch64 with -O0
 ------------------------------
 Benchmark             Time 
 ------------------------------
-before               17.9 ns 
-after                16.7 ns 
+before               315 ns 
+after                301 ns 
+
+float32x4_t pexp op on Aarch64 with -O3
+------------------------------
+Benchmark             Time 
+------------------------------
+before               19.3 ns 
+after                17.8 ns 
 ```
 
 ### 5. 解决Eigen在window平台使用msvc编译时对于向量化类型下标运算不支持触发bug（issue1991和1997）
